@@ -21,7 +21,7 @@
             <p class="subtitle">AI Service Made With Zeltoria</p>
             
             <div class="about-section">
-                <p>Clara adalah asisten AI serbaguna yang dirancang untuk mempermudah kreativitas dan produktivitasmu. Dari memperbaiki foto buram, membuat gambar dari teks, hingga unduh media sosial, semua ada di sini.</p>
+                <p id="typing-text" style="color: #e1e8ed; font-size: 13px; min-height: 20px;"></p>
             </div>
 
             <button class="enter-btn" onclick="startLoadingTransition()">Mulai Sekarang <i class="fa-solid fa-arrow-right"></i></button>
@@ -51,7 +51,34 @@
             <div class="avatar-container"><img src="https://zeltoria.github.io/m/support.png" alt="Clara"></div>
         </header>
 
-        <div id="chat-view" class="view-section active">
+        <div id="dashboard-view" class="view-section active" style="display: flex;">
+            <div class="tools-container">
+                <div class="tools-panel" style="text-align:center; margin-bottom:20px; background:transparent; border:none; box-shadow:none;">
+                    <div class="avatar-container" style="width:80px; height:80px; margin:0 auto 15px auto; border-width:3px; border-radius:50% !important;">
+                        <img src="https://zeltoria.github.io/m/support.png" alt="Clara">
+                    </div>
+                    <h2 style="color:white; margin-bottom:5px;">Clara Dashboard</h2>
+                    <p style="color:var(--text-secondary); font-size:12px;">System Monitor & Statistics</p>
+                </div>
+        
+                <div class="dashboard-grid">
+                    <div class="stat-card"><i class="fa-solid fa-memory" style="color:var(--accent); font-size:24px;"></i><span class="stat-value" id="dash-memory">...</span><span class="stat-label">Memory</span></div>
+                    <div class="stat-card"><i class="fa-solid fa-hard-drive" style="color:var(--accent); font-size:24px;"></i><span class="stat-value" id="dash-storage">...</span><span class="stat-label">Storage</span></div>
+                    <div class="stat-card"><i class="fa-solid fa-clock" style="color:var(--accent); font-size:24px;"></i><span class="stat-value" id="dash-uptime">00:00:00</span><span class="stat-label">Uptime</span></div>
+                    <div class="stat-card"><i class="fa-solid fa-network-wired" style="color:var(--accent); font-size:24px;"></i><span class="stat-value" id="dash-ip" style="font-size:12px;">Checking...</span><span class="stat-label">IP Addr</span></div>
+                </div>
+        
+                <div class="tools-panel" style="margin-top:15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="color:white; font-size:13px; font-weight:bold;">Total Fitur Terpakai</span>
+                        <span id="dash-usage" style="color:var(--accent); font-weight:bold; font-family:monospace;">0</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.1); height:6px; border-radius:10px; overflow:hidden;"><div style="width:65%; height:100%; background:var(--accent);"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-view" class="view-section" style="display: none;">
             <div class="chat-background" id="chat-container">
                 <div class="message bot">
                     <div class="bubble"><span class="text">Hai! Clara di sini. Mau ngobrol, bikin gambar, atau dengerin suara AI? Pilih di menu ya!</span><span class="time">Now</span></div>
@@ -201,7 +228,8 @@
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header"><h2>List Service</h2><i class="material-icons close-btn" onclick="toggleSidebar()">close</i></div>
         <ul class="menu-list menu-border">
-            <li class="active" onclick="changeMode('chat')"><i class="fa-regular fa-message"></i> AI Chatbot</li>
+            <li class="active" onclick="changeMode('dashboard')"><i class="fa-solid fa-gauge-high"></i> Dashboard</li>
+            <li onclick="changeMode('chat')"><i class="fa-regular fa-message"></i> AI Chatbot</li>
             <li onclick="changeMode('enhance')"><i class="fa-solid fa-wand-magic-sparkles"></i> Photo Enhancer</li>
             <li onclick="changeMode('video')"><i class="fa-solid fa-video"></i> Video Upscaler</li>
             <li onclick="changeMode('downloader')"><i class="fa-solid fa-cloud-arrow-down"></i> Media Download</li>

@@ -1,4 +1,4 @@
-let currentMode = 'chat';
+let currentMode = 'dashboard';
 let currentPersona = 'normal';
 let activeSessionId = null;
 let currentChatImageBase64 = null;
@@ -103,6 +103,10 @@ async function sendMessage() {
     const imageToSend = currentChatImageBase64;
     clearChatImage(); scrollToBottom();
     const loadingId = addLoadingMessage(); scrollToBottom();
+    
+    // Increment Usage
+    incUsage();
+
     try {
         const response = await fetch('/api/chat', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -152,7 +156,7 @@ function startLoadingTransition() {
                 document.getElementById('app-main').style.display = 'flex';
                 if(window.visualViewport) adjustVisualViewport();
                 
-                // --- TRIGGER IKLAN POPUP SETELAH LOADING ---
+                // Trigger Promo
                 setTimeout(openPromo, 1000); 
 
             }, 500);
@@ -174,44 +178,50 @@ function openSupport() { document.getElementById('support-modal').style.display 
 function openPromo() { document.getElementById('promo-popup').style.display = 'flex'; }
 function closePromo() { document.getElementById('promo-popup').style.display = 'none'; }
 
-
 function changeMode(mode) {
     currentMode = mode;
     document.querySelectorAll('.menu-list li').forEach(li => li.classList.remove('active'));
     
-    // Order: 0:Chat, 1:Enhance, 2:Video, 3:Download, 4:Upload, 5:ImgGen, 6:TTS
+    // Order: 0:Dashboard, 1:Chat, 2:Enhance, 3:Video, 4:Download, 5:Upload, 6:ImgGen, 7:TTS
     const list = document.querySelectorAll('.menu-list li');
     const headerTitle = document.getElementById('header-title');
     const status = document.getElementById('header-status');
     
-    ['chat-view', 'image-view', 'enhance-view', 'video-view', 'uploader-view', 'downloader-view', 'tts-view'].forEach(id => document.getElementById(id).style.display = 'none');
+    ['dashboard-view', 'chat-view', 'image-view', 'enhance-view', 'video-view', 'uploader-view', 'downloader-view', 'tts-view'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.style.display = 'none';
+    });
 
-    if(mode === 'chat') { 
-        list[0].classList.add('active'); headerTitle.innerText = 'AI Chatbot'; status.innerText = 'Online'; 
+    if(mode === 'dashboard') {
+        list[0].classList.add('active'); headerTitle.innerText = 'Dashboard'; status.innerText = 'System Monitor';
+        document.getElementById('dashboard-view').style.display = 'flex'; updateDashStats();
+    }
+    else if(mode === 'chat') { 
+        list[1].classList.add('active'); headerTitle.innerText = 'AI Chatbot'; status.innerText = 'Online'; 
         document.getElementById('chat-view').style.display = 'flex'; setTimeout(scrollToBottom, 100); 
     }
     else if(mode === 'enhance') { 
-        list[1].classList.add('active'); headerTitle.innerText = 'Photo Enhancer'; status.innerText = 'HD Tool'; 
+        list[2].classList.add('active'); headerTitle.innerText = 'Photo Enhancer'; status.innerText = 'HD Tool'; 
         document.getElementById('enhance-view').style.display = 'flex'; 
     }
     else if(mode === 'video') { 
-        list[2].classList.add('active'); headerTitle.innerText = 'Video Upscaler'; status.innerText = 'AI Video'; 
+        list[3].classList.add('active'); headerTitle.innerText = 'Video Upscaler'; status.innerText = 'AI Video'; 
         document.getElementById('video-view').style.display = 'flex'; 
     }
     else if(mode === 'downloader') { 
-        list[3].classList.add('active'); headerTitle.innerText = 'Media Download'; status.innerText = 'Multi-Tools'; 
+        list[4].classList.add('active'); headerTitle.innerText = 'Media Download'; status.innerText = 'Multi-Tools'; 
         document.getElementById('downloader-view').style.display = 'flex'; 
     }
     else if(mode === 'uploader') { 
-        list[4].classList.add('active'); headerTitle.innerText = 'Temp File Cloud'; status.innerText = 'Storage'; 
+        list[5].classList.add('active'); headerTitle.innerText = 'Temp File Cloud'; status.innerText = 'Storage'; 
         document.getElementById('uploader-view').style.display = 'flex'; 
     }
     else if(mode === 'image') { 
-        list[5].classList.add('active'); headerTitle.innerText = 'AI Image Gen'; status.innerText = 'Creative'; 
+        list[6].classList.add('active'); headerTitle.innerText = 'AI Image Gen'; status.innerText = 'Creative'; 
         document.getElementById('image-view').style.display = 'flex'; 
     }
     else if(mode === 'tts') { 
-        list[6].classList.add('active'); headerTitle.innerText = 'Text To Speech'; status.innerText = 'Typecast'; 
+        list[7].classList.add('active'); headerTitle.innerText = 'Text To Speech'; status.innerText = 'Typecast'; 
         document.getElementById('tts-view').style.display = 'flex'; 
     }
     closeAllMenus();
@@ -242,6 +252,7 @@ async function generateImage() {
     const previewBox = document.getElementById('image-preview');
     const downloadBtn = document.getElementById('download-btn');
     toggleLoader(true, "Sedang Menggambar...");
+    incUsage(); // Stats
     
     const oldImg = previewBox.querySelector('img'); if(oldImg) oldImg.remove();
     downloadBtn.style.display = 'none'; previewBox.style.display = 'flex';
@@ -265,6 +276,7 @@ async function resolveMedia() {
     const url = document.getElementById('dl-url').value.trim(); const type = document.getElementById('dl-type').value;
     if(!url) { showCustomAlert("Link kosong!"); return; }
     toggleLoader(true, "Mencari Media...");
+    incUsage(); // Stats
     try {
         const response = await fetch('/api/downloader/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, type }) });
         const res = await response.json(); toggleLoader(false);
@@ -290,6 +302,7 @@ async function handleGeneralUpload(input) {
     if(!input.files[0]) return;
     const fd = new FormData(); fd.append('file', input.files[0]);
     toggleLoader(true, "Mengupload File...");
+    incUsage(); // Stats
     const res = await fetch('/api/upload', {method:'POST', body:fd});
     const data = await res.json(); toggleLoader(false);
     if(data.success) { document.getElementById('upload-result').style.display='block'; document.getElementById('file-url-output').value = data.fileUrl; }
@@ -311,6 +324,7 @@ async function processEnhance() {
     const f = document.getElementById('enhance-file'); const apiSelect = document.getElementById('enhance-api');
     if(!f.files[0]) { showCustomAlert("Pilih file dulu!"); return; }
     toggleLoader(true, "Meningkatkan Kualitas..."); 
+    incUsage(); // Stats
     const fd = new FormData(); fd.append('image', f.files[0]); fd.append('provider', apiSelect.value);
     try {
         const res = await fetch('/api/enhance-image', {method:'POST', body:fd});
@@ -342,6 +356,7 @@ async function processVideoUpscale() {
     if(f.files[0].size > 50 * 1024 * 1024) { showCustomAlert("File max 50MB!"); return; }
 
     toggleLoader(true, "Video sedang diproses AI... (Bisa 1-5 Menit)");
+    incUsage(); // Stats
     const fd = new FormData();
     fd.append('video', f.files[0]);
 
@@ -384,6 +399,7 @@ async function generateTTS() {
     
     if (!text) { showCustomAlert("Isi teksnya dulu!"); return; }
     toggleLoader(true, "Membuat Suara...");
+    incUsage(); // Stats
     playerContainer.style.display = 'none';
 
     try {
@@ -399,3 +415,58 @@ async function generateTTS() {
         } else { showCustomAlert(data.reply); }
     } catch (e) { toggleLoader(false); showCustomAlert("Gagal koneksi server."); }
 }
+
+// --- DASHBOARD & TYPING LOGIC (NEW) ---
+const typeTexts = ["Clara adalah AI asisten serbaguna.", "Bisa HD-kan foto buram jadi jernih.", "Download video TikTok/IG tanpa watermark.", "Teman ngobrol yang asik dan pintar."];
+let txtIdx = 0, charIdx = 0, isDel = false;
+
+function typeEffect() {
+    const el = document.getElementById('typing-text');
+    if(!el) return;
+    const current = typeTexts[txtIdx];
+    el.innerHTML = current.substring(0, charIdx) + '<span class="cursor-blink"></span>';
+    
+    let speed = isDel ? 30 : 50;
+    if(!isDel && charIdx === current.length) { speed = 2000; isDel = true; }
+    else if(isDel && charIdx === 0) { isDel = false; txtIdx = (txtIdx+1)%typeTexts.length; speed = 500; }
+    
+    charIdx += isDel ? -1 : 1;
+    setTimeout(typeEffect, speed);
+}
+
+let usageCount = localStorage.getItem('claraUsage') || 0;
+
+function updateDashStats() {
+    // Fake Stats Simulation
+    const elMem = document.getElementById('dash-memory');
+    const elStor = document.getElementById('dash-storage');
+    if(elMem) elMem.innerText = (Math.random()*(4.5-3.5)+3.5).toFixed(1) + " GB";
+    if(elStor) elStor.innerText = Math.floor(Math.random()*(65-55)+55) + "%";
+    
+    const elUsage = document.getElementById('dash-usage');
+    if(elUsage) elUsage.innerText = usageCount;
+
+    // Get IP Real
+    fetch('https://api.ipify.org?format=json').then(r=>r.json())
+    .then(d => { const el = document.getElementById('dash-ip'); if(el) el.innerText = d.ip; })
+    .catch(() => { const el = document.getElementById('dash-ip'); if(el) el.innerText = "Offline"; });
+}
+
+// Uptime Counter
+const startT = Date.now();
+setInterval(() => {
+    if(currentMode !== 'dashboard') return;
+    const d = new Date(Date.now() - startT);
+    const el = document.getElementById('dash-uptime');
+    if(el) el.innerText = d.toISOString().substr(11, 8);
+}, 1000);
+
+function incUsage() {
+    usageCount++; localStorage.setItem('claraUsage', usageCount);
+    const el = document.getElementById('dash-usage'); if(el) el.innerText = usageCount;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    typeEffect();
+    if(currentMode === 'dashboard') updateDashStats();
+});
