@@ -18,7 +18,12 @@
         <div class="landing-content">
             <div class="landing-avatar"><img src="https://zeltoria.github.io/m/support.png" alt="Zeltoria"></div>
             <h1>Clara Twilight</h1>
-            <p>AI Service Made With Zeltoria</p>
+            <p class="subtitle">AI Service Made With Zeltoria</p>
+            
+            <div class="about-section">
+                <p>Clara adalah asisten AI serbaguna yang dirancang untuk mempermudah kreativitas dan produktivitasmu. Dari memperbaiki foto buram, membuat gambar dari teks, hingga unduh media sosial, semua ada di sini.</p>
+            </div>
+
             <button class="enter-btn" onclick="startLoadingTransition()">Mulai Sekarang <i class="fa-solid fa-arrow-right"></i></button>
             <div class="landing-links">
                 <a href="https://chat.whatsapp.com/EtgDg8rnba50aMh8NbysAd" target="_blank" class="link-btn"><i class="fa-brands fa-whatsapp"></i> Group WA</a>
@@ -30,7 +35,7 @@
     <div id="loading-transition" class="loading-screen" style="display: none;">
         <div class="loading-content-box">
             <h1 id="loading-percentage" style="font-size: 40px; margin-bottom: 10px;">0%</h1>
-            <p>Sedang Memuat Content......</p>
+            <p>Sedang Memuat Content...</p>
             <div class="progress-bar-container"><div class="progress-bar" id="progress-bar"></div></div>
         </div>
     </div>
@@ -67,6 +72,63 @@
             </div>
         </div>
 
+        <div id="enhance-view" class="view-section" style="display: none;">
+            <div class="tools-container">
+                <div class="tools-panel" style="padding: 15px; margin-bottom: 10px;">
+                    <label style="color:var(--text-secondary); font-size:12px; font-weight:600; margin-bottom:5px; display:block;">Pilih Server API</label>
+                    <select id="enhance-api">
+                        <option value="nekolabs">Server 1 (Nekolabs)</option>
+                        <option value="baguss">Server 2 (Baguss Remini)</option>
+                    </select>
+                </div>
+
+                <div class="image-preview-box" id="enhance-preview" style="display:flex;">
+                    <div class="placeholder-upload" id="enhance-placeholder" onclick="document.getElementById('enhance-file').click()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i><p>Upload Foto</p>
+                    </div>
+                    <div id="enhance-file-info" style="display:none; flex-direction:column; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-file-image" style="font-size: 50px; color: var(--text-secondary);"></i>
+                        <span id="enhance-filename" style="color: white; font-family: monospace;">filename.jpg</span>
+                    </div>
+                    <div id="enhance-actions" style="display: none; width: 100%; gap: 10px; margin-top: 20px; padding: 0 20px;">
+                        <a id="btn-view-result" href="#" target="_blank" class="dl-btn" style="background: var(--bubble-user);"><i class="fa-solid fa-link"></i> Lihat</a>
+                        <a id="btn-download-result" href="#" download class="dl-btn" style="background: var(--bubble-user);"><i class="fa-solid fa-download"></i> Unduh</a>
+                    </div>
+                </div>
+                <div class="tools-panel">
+                    <input type="file" id="enhance-file" accept="image/*" style="display: none;" onchange="previewEnhanceFile(this)">
+                    <button class="generate-btn" onclick="processEnhance()"><i class="fa-solid fa-bolt"></i> Proses HD</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="video-view" class="view-section" style="display: none;">
+            <div class="tools-container">
+                <div class="tools-panel" style="text-align:center; padding: 30px 20px;">
+                    <i class="fa-solid fa-video" style="font-size: 50px; color: var(--accent); margin-bottom: 20px;"></i>
+                    <h3 style="color:white; margin-bottom: 5px;">Video Upscaler AI</h3>
+                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 20px;">Maksimal video 50MB. Proses bisa memakan waktu.</p>
+                    
+                    <input type="file" id="video-file" accept="video/mp4,video/*" style="display: none;" onchange="previewVideoFile(this)">
+                    <button class="generate-btn" onclick="document.getElementById('video-file').click()" style="margin-bottom: 15px; background: #2c3e50;"><i class="fa-solid fa-folder-open"></i> Pilih Video</button>
+                    
+                    <div id="video-file-info" style="display:none; color:white; font-family:monospace; margin-bottom:15px; background:rgba(0,0,0,0.2); padding:10px; border-radius:10px;">
+                        <span id="video-filename">video.mp4</span>
+                    </div>
+
+                    <button class="generate-btn" onclick="processVideoUpscale()"><i class="fa-solid fa-wand-magic-sparkles"></i> Tingkatkan Kualitas</button>
+
+                    <div id="video-result-box" style="display:none; margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                        <p style="color:#2ecc71; margin-bottom:10px; font-weight:bold;">Selesai!</p>
+                        <div style="display: flex; gap: 10px;">
+                             <a id="btn-view-video" href="#" target="_blank" class="dl-btn" style="background: var(--bubble-user); flex: 1;"><i class="fa-solid fa-eye"></i> Lihat</a>
+                             <a id="btn-download-video" href="#" download class="dl-btn" style="background: var(--bubble-user); flex: 1;"><i class="fa-solid fa-download"></i> Simpan</a>
+                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="downloader-view" class="view-section" style="display: none;">
              <div class="tools-container">
                 <div class="tools-panel">
@@ -85,27 +147,14 @@
              <div class="tools-container">
                 <div class="tools-panel" style="text-align:center; padding: 40px 20px;">
                     <i class="fa-solid fa-cloud-arrow-up" style="font-size: 50px; color: var(--accent); margin-bottom: 20px;"></i>
-                    <h3 style="color:white;">File Uploader</h3>
+                    <h3 style="color:white; margin-bottom: 5px;">File Uploader</h3>
+                    <p style="color:var(--text-secondary); font-size:12px; margin-bottom:20px;">Simpan file sementara & dapatkan link publik.</p>
                     <input type="file" id="general-file" style="display: none;" onchange="handleGeneralUpload(this)">
                     <button class="generate-btn" onclick="document.getElementById('general-file').click()"><i class="fa-solid fa-file-import"></i> Pilih File</button>
                     <div id="upload-result" style="display: none; margin-top: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;">
                         <input type="text" id="file-url-output" readonly style="width:100%; background:transparent; border:none; color:white;">
                         <i class="fa-regular fa-copy" onclick="copyUrl()" style="color:var(--accent); cursor:pointer; margin-top:5px;"></i>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="enhance-view" class="view-section" style="display: none;">
-            <div class="tools-container">
-                <div class="image-preview-box" id="enhance-preview" style="display:flex;">
-                    <div class="placeholder-upload" id="enhance-placeholder" onclick="document.getElementById('enhance-file').click()"><i class="fa-solid fa-wand-magic-sparkles"></i><p>Upload Foto</p></div>
-                    <img id="enhance-img-result" src="" style="display: none; width:100%; border-radius:15px;">
-                    <a id="download-enhance" class="download-overlay" href="#" download="clara-hd.jpg"><i class="fa-solid fa-download"></i></a>
-                </div>
-                <div class="tools-panel">
-                    <input type="file" id="enhance-file" accept="image/*" style="display: none;" onchange="previewEnhanceFile(this)">
-                    <button class="generate-btn" onclick="processEnhance()"><i class="fa-solid fa-bolt"></i> Proses HD</button>
                 </div>
             </div>
         </div>
@@ -132,50 +181,17 @@
 
         <div id="tts-view" class="view-section" style="display: none;">
             <div class="tools-container">
-                
                 <div class="tools-panel">
-                    <div class="input-group">
-                        <label>Teks Suara</label>
-                        <textarea id="tts-text" placeholder="Ketik kata-kata di sini..." style="height: 100px;"></textarea>
-                    </div>
-
+                    <div class="input-group"><label>Teks Suara</label><textarea id="tts-text" placeholder="Ketik kata-kata di sini..." style="height: 100px;"></textarea></div>
                     <div class="settings-row" style="margin-top: 15px; display: flex; gap: 10px;">
-                        <div class="setting-item" style="flex: 1;">
-                            <label><i class="fa-solid fa-user-tie"></i> Karakter</label>
-                            <select id="tts-voice" onchange="updateEmotionList()">
-                                <option value="">Loading...</option>
-                            </select>
-                        </div>
-                        <div class="setting-item" style="flex: 1;">
-                            <label><i class="fa-solid fa-masks-theater"></i> Emosi</label>
-                            <select id="tts-emotion">
-                                <option value="normal">Normal</option>
-                            </select>
-                        </div>
+                        <div class="setting-item" style="flex: 1;"><label><i class="fa-solid fa-user-tie"></i> Karakter</label><select id="tts-voice" onchange="updateEmotionList()"><option value="">Loading...</option></select></div>
+                        <div class="setting-item" style="flex: 1;"><label><i class="fa-solid fa-masks-theater"></i> Emosi</label><select id="tts-emotion"><option value="normal">Normal</option></select></div>
                     </div>
-
                     <div class="settings-row" style="margin-top: 10px; margin-bottom: 15px; display: flex; gap: 10px;">
-                        <div class="setting-item" style="flex: 1;">
-                            <label><i class="fa-solid fa-microchip"></i> Model</label>
-                            <select id="tts-model">
-                                <option value="ssfm-v21">SSFM v2.1</option>
-                                <option value="ssfm-v30">SSFM v3.0</option>
-                            </select>
-                        </div>
+                        <div class="setting-item" style="flex: 1;"><label><i class="fa-solid fa-microchip"></i> Model</label><select id="tts-model"><option value="ssfm-v21">SSFM v2.1</option><option value="ssfm-v30">SSFM v3.0</option></select></div>
                     </div>
-
-                    <button class="generate-btn" onclick="generateTTS()">
-                        <i class="fa-solid fa-microphone-lines"></i> Buat Suara
-                    </button>
-
-                    <div id="tts-player-container" style="display:none; width:100%; margin-top:20px; text-align:center;">
-                        <audio id="tts-audio" controls style="width:100%; margin-bottom:10px;"></audio>
-                        <br>
-                        <a id="tts-download" href="#" download class="generate-btn" style="background:var(--bubble-user); font-size:13px; width:auto; display:inline-flex; padding: 10px 20px; border:none; border-radius:10px;">
-                            <i class="fa-solid fa-download"></i> Download Audio
-                        </a>
-                    </div>
-
+                    <button class="generate-btn" onclick="generateTTS()"><i class="fa-solid fa-microphone-lines"></i> Buat Suara</button>
+                    <div id="tts-player-container" style="display:none; width:100%; margin-top:20px; text-align:center;"><audio id="tts-audio" controls style="width:100%; margin-bottom:10px;"></audio><br><a id="tts-download" href="#" download class="generate-btn" style="background:var(--bubble-user); font-size:13px; width:auto; display:inline-flex; padding: 10px 20px; border:none; border-radius:10px;"><i class="fa-solid fa-download"></i> Download Audio</a></div>
                 </div>
             </div>
         </div>
@@ -184,14 +200,24 @@
 
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header"><h2>List Service</h2><i class="material-icons close-btn" onclick="toggleSidebar()">close</i></div>
-        <ul class="menu-list">
-            <li class="active" onclick="changeMode('chat')"><i class="fa-regular fa-message"></i> Chatbot</li>
-            <li onclick="changeMode('downloader')"><i class="fa-solid fa-cloud-arrow-down"></i> Downloader</li>
-            <li onclick="changeMode('uploader')"><i class="fa-solid fa-folder-open"></i> File Uploader</li>
-            <li onclick="changeMode('enhance')"><i class="fa-solid fa-wand-magic-sparkles"></i> Image Enhancer</li>
-            <li onclick="changeMode('image')"><i class="fa-solid fa-palette"></i> Image Generator</li>
+        <ul class="menu-list menu-border">
+            <li class="active" onclick="changeMode('chat')"><i class="fa-regular fa-message"></i> AI Chatbot</li>
+            <li onclick="changeMode('enhance')"><i class="fa-solid fa-wand-magic-sparkles"></i> Photo Enhancer</li>
+            <li onclick="changeMode('video')"><i class="fa-solid fa-video"></i> Video Upscaler</li>
+            <li onclick="changeMode('downloader')"><i class="fa-solid fa-cloud-arrow-down"></i> Media Download</li>
+            <li onclick="changeMode('uploader')"><i class="fa-solid fa-folder-open"></i> Temp File Cloud</li>
+            <li onclick="changeMode('image')"><i class="fa-solid fa-palette"></i> Text To Img</li>
             <li onclick="changeMode('tts')"><i class="fa-solid fa-microphone-lines"></i> Typecast TTS</li>
         </ul>
+        
+        <div class="sidebar-footer">
+            <a href="https://api.whatsapp.com/send/?phone=6285150910870&text=bg%20mau%20request%20fitur%20dong" target="_blank" class="sidebar-action-btn">
+                <i class="fa-solid fa-circle-question"></i> Request Fitur
+            </a>
+            <button onclick="openSupport()" class="sidebar-action-btn special">
+                <i class="fa-solid fa-heart"></i> Support Dev
+            </button>
+        </div>
     </nav>
 
     <div class="modal-settings" id="settings-modal">
@@ -211,12 +237,59 @@
         </div>
     </div>
 
-    <div id="global-loader" class="global-loader"><div class="loader-content"><div class="spinner-large"></div><p>Sedang Di Proses...</p></div></div>
+    <div id="global-loader" class="global-loader">
+        <div class="loader-content">
+            <div class="spinner-container">
+                <div class="spinner-ring"></div>
+                <span id="spinner-percent" class="spinner-text">0%</span>
+            </div>
+            <p id="loader-msg">Sedang Di Proses...</p>
+        </div>
+    </div>
+
     <div id="custom-alert-overlay" class="global-loader" style="display:none; z-index: 10000;">
         <div class="custom-alert-box">
             <i class="fa-solid fa-circle-info" style="font-size: 40px; color: var(--accent); margin-bottom:15px;"></i>
             <p id="custom-alert-msg" style="margin-bottom: 25px;">Alert</p>
             <button class="generate-btn" onclick="closeCustomAlert()" style="padding: 10px 40px; width: auto; margin: 0 auto;">Oke</button>
+        </div>
+    </div>
+
+    <div id="promo-popup" class="global-loader" style="display:none; z-index: 9995;">
+        <div class="promo-box">
+            <div class="promo-header"><i class="fa-brands fa-whatsapp"></i> Penawaran Spesial</div>
+            <div class="promo-body">
+                <h3>Sewa Bot WhatsApp!</h3>
+                <p>Mau fitur lebih lengkap, lebih cepat, dan anti ribet buka web? Gunakan versi Bot WhatsApp Premium.</p>
+                <ul class="promo-list">
+                    <li><i class="fa-solid fa-check"></i> Unlimited Access</li>
+                    <li><i class="fa-solid fa-check"></i> 100+ Fitur Eksklusif</li>
+                    <li><i class="fa-solid fa-check"></i> Respon Super Cepat</li>
+                </ul>
+                <a href="https://wa.me/6285150910870?text=Halo%20kak,%20saya%20tertarik%20sewa%20bot%20WhatsApp%20nya" target="_blank" class="promo-btn">Sewa Sekarang <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="promo-close" onclick="closePromo()">Tutup</div>
+        </div>
+    </div>
+
+    <div id="support-modal" class="global-loader" style="display:none; z-index: 9996;">
+        <div class="support-box">
+            <div class="landing-avatar"><img src="https://zeltoria.github.io/m/support.png" alt="Dev"></div>
+            <h3>Support Developer</h3>
+            <p>Traktir kopi biar server Clara tetap ngebul dan fitur makin canggih!</p>
+            
+            <div class="bank-info">
+                <div class="bank-item">
+                    <span class="bank-label">ShopeePay</span>
+                    <span class="bank-number">085150910870</span>
+                </div>
+                <div class="bank-item">
+                    <span class="bank-label">Seabank</span>
+                    <span class="bank-number">901610266653</span>
+                </div>
+            </div>
+
+            <button class="generate-btn" onclick="document.getElementById('support-modal').style.display='none'">Terima Kasih</button>
         </div>
     </div>
 

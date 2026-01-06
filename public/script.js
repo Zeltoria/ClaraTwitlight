@@ -2,47 +2,35 @@ let currentMode = 'chat';
 let currentPersona = 'normal';
 let activeSessionId = null;
 let currentChatImageBase64 = null;
+let loaderInterval = null;
 
 // --- DYNAMIC VOICES LOADING ---
 async function loadVoices() {
     try {
         const response = await fetch('/api/tts/voices');
         const data = await response.json();
-        
         if (data.success) {
             const voiceSelect = document.getElementById('tts-voice');
             voiceSelect.innerHTML = '';
-
             data.voices.forEach(v => {
                 const option = document.createElement('option');
                 option.value = v.voice_id;
                 option.text = v.voice_name;
-                // Simpan emotions di dataset untuk update dinamis
                 option.dataset.emotions = JSON.stringify(v.emotions);
                 voiceSelect.appendChild(option);
             });
-
-            // Update emosi untuk karakter pertama
             updateEmotionList();
-        } else {
-            console.error("Gagal load voices");
         }
-    } catch (e) {
-        console.error("Server Error:", e);
-    }
+    } catch (e) { console.error("Server Error:", e); }
 }
 
-// --- UPDATE DROPDOWN EMOSI ---
 function updateEmotionList() {
     const voiceSelect = document.getElementById('tts-voice');
     const emotionSelect = document.getElementById('tts-emotion');
     const selectedOption = voiceSelect.options[voiceSelect.selectedIndex];
 
     if (selectedOption) {
-        // Ambil array emosi dari dataset
         const emotions = JSON.parse(selectedOption.dataset.emotions || '["normal"]');
-        
-        // Bersihkan dan isi ulang
         emotionSelect.innerHTML = '';
         emotions.forEach(emo => {
             const opt = document.createElement('option');
@@ -53,66 +41,41 @@ function updateEmotionList() {
     }
 }
 
-// Load saat halaman siap
-window.onload = function() {
-    loadVoices();
-};
+window.onload = function() { loadVoices(); };
 
-// --- TTS GENERATE (CLEAN UI) ---
-async function generateTTS() {
-    const text = document.getElementById('tts-text').value.trim();
-    const voice_id = document.getElementById('tts-voice').value;
-    const emotion = document.getElementById('tts-emotion').value;
-    const model = document.getElementById('tts-model').value;
-    
-    // UI Elements
-    const playerContainer = document.getElementById('tts-player-container');
-    const audio = document.getElementById('tts-audio');
-    const dlBtn = document.getElementById('tts-download');
-    
-    if (!text) { showCustomAlert("Isi teksnya dulu!"); return; }
-    
-    toggleLoader(true);
-    
-    // Hide player sebelum jadi
-    playerContainer.style.display = 'none';
+// --- LOADER LOGIC ---
+function toggleLoader(show, message = "Sedang Di Proses...") { 
+    const l = document.getElementById('global-loader'); 
+    const msg = document.getElementById('loader-msg');
+    const pct = document.getElementById('spinner-percent');
 
-    try {
-        const response = await fetch('/api/tts', {
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                text: text,
-                voice_id: voice_id,
-                emotion: emotion,
-                model: model
-            }) 
-        });
+    if (show) {
+        l.classList.add('active'); 
+        msg.innerText = message;
         
-        const data = await response.json();
-        toggleLoader(false);
+        // Reset Percentage
+        let p = 0;
+        pct.innerText = "0%";
+        if(loaderInterval) clearInterval(loaderInterval);
         
-        if (data.success) {
-            audio.src = data.audioUrl;
-            dlBtn.href = data.audioUrl;
-            dlBtn.download = `clara-voice-${Date.now()}.wav`;
-            
-            // Tampilkan Player
-            playerContainer.style.display = 'block';
-            audio.play(); 
-            showCustomAlert(data.reply);
-        } else {
-            showCustomAlert(data.reply);
-        }
-    } catch (e) {
-        toggleLoader(false);
-        showCustomAlert("Gagal koneksi server.");
-    }
+        // Simulate progress up to 90% (Fake because we don't have websocket)
+        loaderInterval = setInterval(() => {
+            if(p < 90) {
+                p++;
+                pct.innerText = p + "%";
+            }
+        }, 300); 
+    } else { 
+        // Finish it
+        pct.innerText = "100%";
+        setTimeout(() => {
+            l.classList.remove('active'); 
+            if(loaderInterval) clearInterval(loaderInterval);
+        }, 300);
+    } 
 }
 
-// --- BAGIAN LAIN TETAP SAMA ---
-// (Copy Paste sisa kode sebelumnya: handleChatImage, sendMessage, dll)
-
+// --- CHAT LOGIC ---
 function handleChatImage(input) {
     if (input.files && input.files[0]) {
         const file = input.files[0];
@@ -188,11 +151,15 @@ function startLoadingTransition() {
                 transitionScreen.style.display = 'none';
                 document.getElementById('app-main').style.display = 'flex';
                 if(window.visualViewport) adjustVisualViewport();
+                
+                // --- TRIGGER IKLAN POPUP SETELAH LOADING ---
+                setTimeout(openPromo, 1000); 
+
             }, 500);
         } else { width++; bar.style.width = width + '%'; percentText.innerText = width + '%'; }
     }, 30);
 }
-function toggleLoader(show) { const l = document.getElementById('global-loader'); if (show) l.classList.add('active'); else l.classList.remove('active'); }
+
 function showCustomAlert(msg) { document.getElementById('custom-alert-overlay').style.display = 'flex'; document.getElementById('custom-alert-msg').innerText = msg; }
 function closeCustomAlert() { document.getElementById('custom-alert-overlay').style.display = 'none'; }
 function toggleSidebar() { const s = document.getElementById('sidebar'); s.classList.toggle('open'); document.getElementById('overlay').classList.toggle('active', s.classList.contains('open')); }
@@ -202,20 +169,51 @@ function closeAllMenus() { document.getElementById('sidebar').classList.remove('
 function checkOverlay(){ if(!document.getElementById('sidebar').classList.contains('open') && !document.getElementById('settings-modal').classList.contains('active')) document.getElementById('overlay').classList.remove('active'); }
 function scrollToBottom() { const c = document.getElementById('chat-container'); if(c) c.scrollTop = c.scrollHeight; }
 
+// --- SUPPORT & PROMO ---
+function openSupport() { document.getElementById('support-modal').style.display = 'flex'; }
+function openPromo() { document.getElementById('promo-popup').style.display = 'flex'; }
+function closePromo() { document.getElementById('promo-popup').style.display = 'none'; }
+
+
 function changeMode(mode) {
     currentMode = mode;
     document.querySelectorAll('.menu-list li').forEach(li => li.classList.remove('active'));
-    // Order: 0:chat, 1:dl, 2:ul, 3:enh, 4:img, 5:tts
+    
+    // Order: 0:Chat, 1:Enhance, 2:Video, 3:Download, 4:Upload, 5:ImgGen, 6:TTS
     const list = document.querySelectorAll('.menu-list li');
     const headerTitle = document.getElementById('header-title');
     const status = document.getElementById('header-status');
-    ['chat-view', 'image-view', 'enhance-view', 'uploader-view', 'downloader-view', 'tts-view'].forEach(id => document.getElementById(id).style.display = 'none');
-    if(mode === 'chat') { list[0].classList.add('active'); headerTitle.innerText = 'Clara'; status.innerText = 'Online'; document.getElementById('chat-view').style.display = 'flex'; setTimeout(scrollToBottom, 100); }
-    else if(mode === 'downloader') { list[1].classList.add('active'); headerTitle.innerText = 'Downloader'; status.innerText = 'Multi-Tools'; document.getElementById('downloader-view').style.display = 'flex'; }
-    else if(mode === 'uploader') { list[2].classList.add('active'); headerTitle.innerText = 'File Uploader'; status.innerText = 'Storage'; document.getElementById('uploader-view').style.display = 'flex'; }
-    else if(mode === 'enhance') { list[3].classList.add('active'); headerTitle.innerText = 'Clara HD'; status.innerText = 'Enhancer'; document.getElementById('enhance-view').style.display = 'flex'; }
-    else if(mode === 'image') { list[4].classList.add('active'); headerTitle.innerText = 'Clara Artist'; status.innerText = 'Creative'; document.getElementById('image-view').style.display = 'flex'; }
-    else if(mode === 'tts') { list[5].classList.add('active'); headerTitle.innerText = 'Typecast TTS'; status.innerText = 'AI Voice'; document.getElementById('tts-view').style.display = 'flex'; }
+    
+    ['chat-view', 'image-view', 'enhance-view', 'video-view', 'uploader-view', 'downloader-view', 'tts-view'].forEach(id => document.getElementById(id).style.display = 'none');
+
+    if(mode === 'chat') { 
+        list[0].classList.add('active'); headerTitle.innerText = 'AI Chatbot'; status.innerText = 'Online'; 
+        document.getElementById('chat-view').style.display = 'flex'; setTimeout(scrollToBottom, 100); 
+    }
+    else if(mode === 'enhance') { 
+        list[1].classList.add('active'); headerTitle.innerText = 'Photo Enhancer'; status.innerText = 'HD Tool'; 
+        document.getElementById('enhance-view').style.display = 'flex'; 
+    }
+    else if(mode === 'video') { 
+        list[2].classList.add('active'); headerTitle.innerText = 'Video Upscaler'; status.innerText = 'AI Video'; 
+        document.getElementById('video-view').style.display = 'flex'; 
+    }
+    else if(mode === 'downloader') { 
+        list[3].classList.add('active'); headerTitle.innerText = 'Media Download'; status.innerText = 'Multi-Tools'; 
+        document.getElementById('downloader-view').style.display = 'flex'; 
+    }
+    else if(mode === 'uploader') { 
+        list[4].classList.add('active'); headerTitle.innerText = 'Temp File Cloud'; status.innerText = 'Storage'; 
+        document.getElementById('uploader-view').style.display = 'flex'; 
+    }
+    else if(mode === 'image') { 
+        list[5].classList.add('active'); headerTitle.innerText = 'AI Image Gen'; status.innerText = 'Creative'; 
+        document.getElementById('image-view').style.display = 'flex'; 
+    }
+    else if(mode === 'tts') { 
+        list[6].classList.add('active'); headerTitle.innerText = 'Text To Speech'; status.innerText = 'Typecast'; 
+        document.getElementById('tts-view').style.display = 'flex'; 
+    }
     closeAllMenus();
 }
 
@@ -232,6 +230,7 @@ function adjustVisualViewport() { const app = document.querySelector('.app-conta
 if (window.visualViewport) { window.visualViewport.addEventListener('resize', adjustVisualViewport); window.visualViewport.addEventListener('scroll', adjustVisualViewport); } else { window.addEventListener('resize', adjustVisualViewport); }
 if(userInputElement) { userInputElement.addEventListener('focus', () => { setTimeout(() => { scrollToBottom(); document.getElementById('chat-view').scrollIntoView(false); }, 300); }); }
 
+// --- IMAGE GENERATOR ---
 async function generateImage() {
     const prompt = document.getElementById('img-prompt').value.trim();
     const style = document.getElementById('img-style').value;
@@ -239,11 +238,14 @@ async function generateImage() {
     const ratio = document.getElementById('img-ratio').value;
     const seed = document.getElementById('img-seed').value; 
     if (!prompt) { showCustomAlert("Isi deskripsi dulu!"); return; }
+    
     const previewBox = document.getElementById('image-preview');
     const downloadBtn = document.getElementById('download-btn');
-    toggleLoader(true);
+    toggleLoader(true, "Sedang Menggambar...");
+    
     const oldImg = previewBox.querySelector('img'); if(oldImg) oldImg.remove();
     downloadBtn.style.display = 'none'; previewBox.style.display = 'flex';
+    
     try {
         const response = await fetch('/api/generate-image', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -253,30 +255,30 @@ async function generateImage() {
         toggleLoader(false);
         if (data.success) {
             const img = document.createElement('img'); img.src = data.imageUrl;
-            img.onload = () => { downloadBtn.href = data.imageUrl; downloadBtn.style.display = 'flex'; };
+            img.onload = () => { downloadBtn.href = data.imageUrl; downloadBtn.download = data.filename || 'image.jpg'; downloadBtn.style.display = 'flex'; };
             previewBox.appendChild(img); showCustomAlert(data.reply);
-        } else { showCustomAlert(data.reply); previewBox.style.display = 'none'; }
-    } catch (e) { toggleLoader(false); previewBox.style.display = 'none'; showCustomAlert("Server Error"); }
+        } else { showCustomAlert(data.reply); }
+    } catch (e) { toggleLoader(false); showCustomAlert("Server Error"); }
 }
 
 async function resolveMedia() {
     const url = document.getElementById('dl-url').value.trim(); const type = document.getElementById('dl-type').value;
     if(!url) { showCustomAlert("Link kosong!"); return; }
-    toggleLoader(true);
+    toggleLoader(true, "Mencari Media...");
     try {
         const response = await fetch('/api/downloader/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, type }) });
         const res = await response.json(); toggleLoader(false);
         if(res.success) {
             document.getElementById('dl-result-card').style.display='block'; document.getElementById('dl-title').innerText = res.data.title; document.getElementById('dl-thumb').src = res.data.thumbnail;
             const btnWrap = document.getElementById('dl-buttons-wrapper'); btnWrap.innerHTML = '';
-            if(res.data.video) btnWrap.innerHTML += `<button class="dl-btn" onclick="dlSave('${res.data.video}')">Video</button>`;
-            if(res.data.audio) btnWrap.innerHTML += `<button class="dl-btn" onclick="dlSave('${res.data.audio}')">Audio</button>`;
+            if(res.data.video) btnWrap.innerHTML += `<a class="dl-btn" onclick="dlSave('${res.data.video}')" href="#">Video</a>`;
+            if(res.data.audio) btnWrap.innerHTML += `<a class="dl-btn" onclick="dlSave('${res.data.audio}')" href="#">Audio</a>`;
         } else showCustomAlert("Gagal");
     } catch(e) { toggleLoader(false); }
 }
 
 async function dlSave(url) {
-    toggleLoader(true);
+    toggleLoader(true, "Mengunduh File...");
     try {
         const res = await fetch('/api/downloader/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url})});
         const data = await res.json(); toggleLoader(false);
@@ -287,7 +289,7 @@ async function dlSave(url) {
 async function handleGeneralUpload(input) {
     if(!input.files[0]) return;
     const fd = new FormData(); fd.append('file', input.files[0]);
-    toggleLoader(true);
+    toggleLoader(true, "Mengupload File...");
     const res = await fetch('/api/upload', {method:'POST', body:fd});
     const data = await res.json(); toggleLoader(false);
     if(data.success) { document.getElementById('upload-result').style.display='block'; document.getElementById('file-url-output').value = data.fileUrl; }
@@ -295,14 +297,105 @@ async function handleGeneralUpload(input) {
 
 function copyUrl() { const t = document.getElementById("file-url-output"); t.select(); navigator.clipboard.writeText(t.value); showCustomAlert("Copied"); }
 
+// --- IMAGE ENHANCER LOGIC ---
 function previewEnhanceFile(input) {
-    if(input.files[0]) { const r = new FileReader(); r.onload=e=>{document.getElementById('enhance-img-result').src=e.target.result;document.getElementById('enhance-img-result').style.display='block';document.getElementById('enhance-placeholder').style.display='none';}; r.readAsDataURL(input.files[0]); }
+    if(input.files && input.files[0]) { 
+        const file = input.files[0];
+        document.getElementById('enhance-placeholder').style.display = 'none';
+        document.getElementById('enhance-file-info').style.display = 'flex';
+        document.getElementById('enhance-filename').innerText = file.name;
+        document.getElementById('enhance-actions').style.display = 'none';
+    }
+}
+async function processEnhance() {
+    const f = document.getElementById('enhance-file'); const apiSelect = document.getElementById('enhance-api');
+    if(!f.files[0]) { showCustomAlert("Pilih file dulu!"); return; }
+    toggleLoader(true, "Meningkatkan Kualitas..."); 
+    const fd = new FormData(); fd.append('image', f.files[0]); fd.append('provider', apiSelect.value);
+    try {
+        const res = await fetch('/api/enhance-image', {method:'POST', body:fd});
+        const data = await res.json(); 
+        toggleLoader(false);
+        if(data.success) { 
+            document.getElementById('enhance-filename').innerText = data.filename || 'enhanced-image.png';
+            document.getElementById('enhance-actions').style.display = 'flex';
+            document.getElementById('btn-view-result').href = data.resultUrl;
+            const btnDL = document.getElementById('btn-download-result'); btnDL.href = data.resultUrl; btnDL.download = data.filename || 'clara-hd.png';
+            showCustomAlert(data.reply);
+        } else { showCustomAlert(data.reply); }
+    } catch(e) { toggleLoader(false); showCustomAlert("Error memproses gambar."); }
 }
 
-async function processEnhance() {
-    const f = document.getElementById('enhance-file'); if(!f.files[0]) return;
-    toggleLoader(true); const fd = new FormData(); fd.append('image', f.files[0]);
-    const res = await fetch('/api/enhance-image', {method:'POST', body:fd});
-    const data = await res.json(); toggleLoader(false);
-    if(data.success) { document.getElementById('enhance-img-result').src = data.resultUrl; document.getElementById('download-enhance').href = data.resultUrl; document.getElementById('download-enhance').style.display='flex'; }
+// --- VIDEO UPSCALER LOGIC ---
+function previewVideoFile(input) {
+    if(input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('video-file-info').style.display = 'block';
+        document.getElementById('video-filename').innerText = file.name;
+        document.getElementById('video-result-box').style.display = 'none';
+    }
+}
+
+async function processVideoUpscale() {
+    const f = document.getElementById('video-file');
+    if(!f.files[0]) { showCustomAlert("Pilih video dulu!"); return; }
+    if(f.files[0].size > 50 * 1024 * 1024) { showCustomAlert("File max 50MB!"); return; }
+
+    toggleLoader(true, "Video sedang diproses AI... (Bisa 1-5 Menit)");
+    const fd = new FormData();
+    fd.append('video', f.files[0]);
+
+    try {
+        const res = await fetch('/api/video-upscale', { method: 'POST', body: fd });
+        const data = await res.json();
+        toggleLoader(false);
+
+        if(data.success) {
+            document.getElementById('video-result-box').style.display = 'block';
+            
+            // Set Link Download
+            const dlBtn = document.getElementById('btn-download-video');
+            dlBtn.href = data.videoUrl;
+            dlBtn.download = data.filename;
+
+            // Set Link View (New)
+            const viewBtn = document.getElementById('btn-view-video');
+            viewBtn.href = data.videoUrl;
+
+            showCustomAlert(data.reply);
+        } else {
+            showCustomAlert(data.reply);
+        }
+    } catch(e) {
+        toggleLoader(false);
+        showCustomAlert("Gagal memproses video (Timeout/Error).");
+    }
+}
+
+// --- TTS LOGIC ---
+async function generateTTS() {
+    const text = document.getElementById('tts-text').value.trim();
+    const voice_id = document.getElementById('tts-voice').value;
+    const emotion = document.getElementById('tts-emotion').value;
+    const model = document.getElementById('tts-model').value;
+    const playerContainer = document.getElementById('tts-player-container');
+    const audio = document.getElementById('tts-audio');
+    const dlBtn = document.getElementById('tts-download');
+    
+    if (!text) { showCustomAlert("Isi teksnya dulu!"); return; }
+    toggleLoader(true, "Membuat Suara...");
+    playerContainer.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/tts', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, voice_id, emotion, model }) 
+        });
+        const data = await response.json();
+        toggleLoader(false);
+        if (data.success) {
+            audio.src = data.audioUrl; dlBtn.href = data.audioUrl; dlBtn.download = `clara-voice-${Date.now()}.wav`;
+            playerContainer.style.display = 'block'; audio.play(); showCustomAlert(data.reply);
+        } else { showCustomAlert(data.reply); }
+    } catch (e) { toggleLoader(false); showCustomAlert("Gagal koneksi server."); }
 }
